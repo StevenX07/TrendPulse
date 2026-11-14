@@ -280,7 +280,7 @@ export function App() {
         onOpenSourcesInfo={() => setActiveTab("sources")}
       />
 
-      <main className="mx-auto max-w-7xl space-y-6 px-4 pt-5 sm:px-6">
+      <main className="mx-auto max-w-7xl space-y-3.5 px-3.5 pt-3 sm:space-y-5 sm:px-6 sm:pt-5">
         {loadError && (
           <div className="rounded-2xl border border-[#FAD2CF] bg-[#FCE8E6] px-4 py-3 text-sm font-medium text-[#C5221F]">
             {loadError}

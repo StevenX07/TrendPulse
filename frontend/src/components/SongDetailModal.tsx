@@ -31,23 +31,23 @@ export function SongDetailModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-4 shadow-2xl sm:rounded-3xl sm:p-6"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex items-start justify-between gap-3 sm:gap-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             {song.cover_url ? (
               <img
                 src={song.cover_url}
                 alt={song.title}
-                className="h-20 w-20 shrink-0 rounded-2xl object-cover shadow-sm"
+                className="h-16 w-16 shrink-0 rounded-2xl object-cover shadow-sm sm:h-20 sm:w-20"
               />
             ) : (
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-[#F1F3F4] text-[#80868B]">
-                <Music2 className="h-8 w-8" />
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#F1F3F4] text-[#80868B] sm:h-20 sm:w-20">
+                <Music2 className="h-7 w-7 sm:h-8 sm:w-8" />
               </div>
             )}
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-[#E8F0FE] px-2.5 py-0.5 font-display text-xs font-bold text-[#1967D2]">
                   #{song.rank_overall} Global 7D

@@ -179,7 +179,7 @@ export function AudioPlayerPill({
   const externalFallbackUrl = song.spotify_url || song.deezer_url || song.apple_music_url || song.youtube_url;
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-1.5rem)] max-w-2xl -translate-x-1/2">
+    <div className="fixed bottom-3 left-1/2 z-40 w-[calc(100%-1rem)] max-w-2xl -translate-x-1/2 pb-[env(safe-area-inset-bottom)] sm:bottom-4 sm:w-[calc(100%-1.5rem)]">
       <audio
         ref={audioRef}
         preload="metadata"
@@ -226,7 +226,7 @@ export function AudioPlayerPill({
       )}
 
       {/* Floating Pill Bar */}
-      <div className="md-pill-shadow rounded-3xl border border-[#DADCE0] bg-white/95 px-4 py-3 backdrop-blur-md">
+      <div className="md-pill-shadow rounded-3xl border border-[#DADCE0] bg-white/95 px-3 py-2.5 backdrop-blur-md sm:px-4 sm:py-3">
         <div className="flex items-center justify-between gap-3">
           {/* Artwork & Info */}
           <div className="flex min-w-0 flex-1 items-center gap-3">

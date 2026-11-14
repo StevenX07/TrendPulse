@@ -104,16 +104,16 @@ export function TrendList({
           <article
             key={song.song_key}
             onClick={() => onSelectSong(song)}
-            className={`md-card md-card-hover flex cursor-pointer flex-col gap-3 rounded-3xl p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-3.5 ${
+            className={`md-card md-card-hover flex cursor-pointer flex-col gap-2.5 rounded-2xl p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:rounded-3xl sm:px-5 sm:py-3.5 ${
               isCurrent ? "border-[#1A73E8] ring-2 ring-[#E8F0FE]" : ""
             }`}
           >
             {/* Left Section: Rank + Cover/Play + Title/Artist/Chips */}
-            <div className="flex min-w-0 flex-1 items-center gap-3.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3.5">
               {/* Rank & WoW Change */}
-              <div className="flex w-9 shrink-0 flex-col items-center text-center">
+              <div className="flex w-6 shrink-0 flex-col items-center text-center sm:w-9">
                 <span
-                  className={`font-display text-lg font-extrabold leading-none ${
+                  className={`font-display text-base font-extrabold leading-none sm:text-lg ${
                     displayRank <= 3 ? "text-[#1A73E8]" : "text-[#3C4043]"
                   }`}
                 >
@@ -135,7 +135,7 @@ export function TrendList({
               </div>
 
               {/* Cover + Instant Play Overlay */}
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-[#F1F3F4]">
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#F1F3F4] sm:h-14 sm:w-14 sm:rounded-2xl">
                 {song.cover_url ? (
                   <img
                     src={song.cover_url}
@@ -160,7 +160,7 @@ export function TrendList({
                     className={`absolute inset-0 flex cursor-pointer items-center justify-center transition ${
                       isCurrentPlaying
                         ? "bg-[#202124]/55 text-white opacity-100"
-                        : "bg-[#202124]/45 text-white opacity-90 sm:opacity-0 sm:hover:opacity-100"
+                        : "bg-[#202124]/45 text-white opacity-0 hover:opacity-100"
                     }`}
                   >
                     {isCurrentPlaying ? (
@@ -180,12 +180,12 @@ export function TrendList({
 
               {/* Track Info & Badges */}
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="truncate font-display text-sm font-bold text-[#202124] sm:text-base">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <h3 className="max-w-full truncate font-display text-sm font-bold text-[#202124] sm:text-base">
                     {song.title}
                   </h3>
                   {song.growth_badge && song.growth_badge !== "Tendencia estable" && (
-                    <span className="inline-flex items-center gap-0.5 rounded-full bg-[#E6F4EA] px-2 py-0.5 text-[11px] font-bold text-[#137333]">
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-[#E6F4EA] px-2 py-0.5 text-[10px] font-bold text-[#137333] sm:text-[11px]">
                       <ArrowUpRight className="h-3 w-3" />
                       {song.growth_badge}
                     </span>
@@ -197,7 +197,7 @@ export function TrendList({
                   )}
                 </div>
 
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#5F6368]">
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[#5F6368] sm:gap-x-2">
                   <span className="font-medium text-[#3C4043]">{song.artist}</span>
                   {song.genres[0] && (
                     <>
@@ -220,11 +220,11 @@ export function TrendList({
                 </div>
 
                 {/* Cross-Platform Pills */}
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <div className="mt-1.5 flex flex-wrap items-center gap-1 sm:mt-2 sm:gap-1.5">
                   {song.platforms.slice(0, 6).map((plat) => (
                     <span
                       key={plat}
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-[11px] ${
                         PLATFORM_STYLES[plat] || "bg-[#F1F3F4] text-[#5F6368]"
                       }`}
                     >
@@ -235,10 +235,10 @@ export function TrendList({
               </div>
             </div>
 
-            {/* Right Section: 7-Day Concrete Volumes + Score + Quick Play Button */}
-            <div className="flex items-center justify-between gap-4 border-t border-[#F1F3F4] pt-2.5 sm:justify-end sm:border-t-0 sm:pt-0">
+            {/* Right Section: 7-Day Concrete Volumes + Score + Play Button */}
+            <div className="flex items-center justify-between gap-2.5 border-t border-[#F1F3F4] pt-2 sm:justify-end sm:gap-4 sm:border-t-0 sm:pt-0">
               {/* Key 7D Numbers */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-left sm:text-right">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-left tabular-nums sm:gap-x-4 sm:text-right">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#80868B]">
                     Spotify 7D
@@ -293,48 +293,51 @@ export function TrendList({
                 </div>
               </div>
 
-              {/* Score Pill */}
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#80868B]">
-                  {primaryScoreLabel}
-                </span>
-                <div
-                  className={`mt-0.5 rounded-full px-3 py-1 font-display text-sm font-extrabold ${
-                    activeTab === "fastest_growth" || activeTab === "new_breakouts"
-                      ? "bg-[#E6F4EA] text-[#137333]"
-                      : activeTab === "tiktok_viral"
-                        ? "bg-[#FEF7E0] text-[#B06000]"
-                        : "bg-[#E8F0FE] text-[#1967D2]"
-                  }`}
-                >
-                  {scoreValue.toFixed(0)}
+              {/* Score Pill + Play Action */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#80868B]">
+                    {primaryScoreLabel}
+                  </span>
+                  <div
+                    className={`mt-0.5 rounded-full px-3 py-1 font-display text-sm font-extrabold ${
+                      activeTab === "fastest_growth" || activeTab === "new_breakouts"
+                        ? "bg-[#E6F4EA] text-[#137333]"
+                        : activeTab === "tiktok_viral"
+                          ? "bg-[#FEF7E0] text-[#B06000]"
+                          : "bg-[#E8F0FE] text-[#1967D2]"
+                    }`}
+                  >
+                    {scoreValue.toFixed(0)}
+                  </div>
                 </div>
-              </div>
 
-              {/* Explicit Play Pill on Desktop */}
-              {canPreview && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPlaySong(song);
-                  }}
-                  title={canAudio ? "Escuchar preview de 30s" : "Reproducir video preview en YouTube"}
-                  className={`hidden h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border transition sm:flex ${
-                    isCurrentPlaying
-                      ? "border-[#1A73E8] bg-[#1A73E8] text-white"
-                      : "border-[#DADCE0] bg-white text-[#3C4043] hover:border-[#1A73E8] hover:bg-[#E8F0FE] hover:text-[#1A73E8]"
-                  }`}
-                >
-                  {isCurrentPlaying ? (
-                    <Pause className="h-4 w-4 fill-current" />
-                  ) : canAudio ? (
-                    <Play className="h-4 w-4 translate-x-0.5 fill-current" />
-                  ) : (
-                    <Radio className="h-4 w-4" />
-                  )}
-                </button>
-              )}
+                {/* Explicit Play Pill (visible on Mobile + Desktop) */}
+                {canPreview && (
+                  <button
+                    type="button"
+                    aria-label={isCurrentPlaying ? `Pausar ${song.title}` : `Escuchar preview ${song.title}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPlaySong(song);
+                    }}
+                    title={canAudio ? "Escuchar preview de 30s" : "Reproducir video preview en YouTube"}
+                    className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border transition ${
+                      isCurrentPlaying
+                        ? "border-[#1A73E8] bg-[#1A73E8] text-white"
+                        : "border-[#DADCE0] bg-white text-[#3C4043] hover:border-[#1A73E8] hover:bg-[#E8F0FE] hover:text-[#1A73E8]"
+                    }`}
+                  >
+                    {isCurrentPlaying ? (
+                      <Pause className="h-4 w-4 fill-current" />
+                    ) : canAudio ? (
+                      <Play className="h-4 w-4 translate-x-0.5 fill-current" />
+                    ) : (
+                      <Radio className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </article>
         );

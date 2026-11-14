@@ -44,11 +44,11 @@ export function KpiHighlights({
   };
 
   return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="-mx-3.5 flex gap-2.5 overflow-x-auto px-3.5 pb-1 snap-x snap-mandatory no-scrollbar sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
       {/* Card 1: #1 Más Streameada 7 Días */}
       <div
         onClick={() => topStreamed && onSelectSong(topStreamed)}
-        className="md-card md-card-hover group cursor-pointer rounded-3xl bg-gradient-to-br from-[#E8F0FE] via-white to-white p-4"
+        className="md-card md-card-hover group w-[78%] min-w-[255px] shrink-0 snap-start cursor-pointer rounded-3xl bg-gradient-to-br from-[#E8F0FE] via-white to-white p-3.5 sm:w-auto sm:min-w-0 sm:p-4"
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D2E3FC] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#174EA6]">
@@ -88,7 +88,7 @@ export function KpiHighlights({
       {/* Card 2: Mayor Crecimiento Rápido */}
       <div
         onClick={() => (fastestGrowth ? onSelectSong(fastestGrowth) : onJumpTab("fastest_growth"))}
-        className="md-card md-card-hover group cursor-pointer rounded-3xl bg-gradient-to-br from-[#E6F4EA] via-white to-white p-4"
+        className="md-card md-card-hover group w-[78%] min-w-[255px] shrink-0 snap-start cursor-pointer rounded-3xl bg-gradient-to-br from-[#E6F4EA] via-white to-white p-3.5 sm:w-auto sm:min-w-0 sm:p-4"
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#CEEAD6] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0D652D]">
@@ -124,7 +124,7 @@ export function KpiHighlights({
       {/* Card 3: Líder TikTok & Instagram Reels */}
       <div
         onClick={() => (topSocial ? onSelectSong(topSocial) : onJumpTab("tiktok_viral"))}
-        className="md-card md-card-hover group cursor-pointer rounded-3xl bg-gradient-to-br from-[#FEF7E0] via-white to-white p-4"
+        className="md-card md-card-hover group w-[78%] min-w-[255px] shrink-0 snap-start cursor-pointer rounded-3xl bg-gradient-to-br from-[#FEF7E0] via-white to-white p-3.5 sm:w-auto sm:min-w-0 sm:p-4"
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FEEFC3] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#B06000]">
@@ -171,7 +171,7 @@ export function KpiHighlights({
       {/* Card 4: Cobertura + Recién llegadas */}
       <div
         onClick={() => onJumpTab("new_breakouts")}
-        className="md-card md-card-hover cursor-pointer rounded-3xl bg-gradient-to-br from-[#FCE8E6] via-white to-white p-4"
+        className="md-card md-card-hover w-[78%] min-w-[255px] shrink-0 snap-start cursor-pointer rounded-3xl bg-gradient-to-br from-[#FCE8E6] via-white to-white p-3.5 sm:w-auto sm:min-w-0 sm:p-4"
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FAD2CF] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#A50E0E]">
