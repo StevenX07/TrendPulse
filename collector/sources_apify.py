@@ -595,7 +595,15 @@ class ApifyCollectorClient:
             if resp.status_code == 401:
                 raise RuntimeError("Token Apify inválido o revocado (HTTP 401).")
             if resp.status_code == 402:
-                raise RuntimeError("Saldo o límite mensual Apify agotado (HTTP 402).")
+                try:
+                    err_detail = str(resp.json().get("error", {}).get("message") or "").strip()
+                except Exception:
+                    err_detail = ""
+                raise RuntimeError(
+                    f"Límite/cuota Apify alcanzada (HTTP 402): {err_detail[:110]}"
+                    if err_detail
+                    else "Saldo o límite mensual Apify agotado (HTTP 402)."
+                )
             if resp.status_code in (403, 429):
                 raise RuntimeError(f"Apify rechazó la solicitud HTTP {resp.status_code}: {resp.text[:140]}")
             resp.raise_for_status()
@@ -907,27 +915,24 @@ class ApifyCollectorClient:
                 )
                 return cost_t, items_t
 
-            res_viral, res_tracks = await asyncio.gather(
-                _fetch_viral(),
-                _fetch_tracks(),
-                return_exceptions=True,
-            )
-
             total_sp_cost = 0.0
             raw_items: List[Dict[str, Any]] = []
             notes: List[str] = []
 
-            if isinstance(res_viral, Exception):
-                notes.append(f"Viral 50: {str(res_viral)[:80]}")
-            else:
-                total_sp_cost += res_viral[0]
-                raw_items.extend(res_viral[1])
+            # Run Viral 50 and track-play lookups sequentially inside this slot so we never exceed Apify's 5-job concurrency cap.
+            try:
+                cost_v, items_v = await _fetch_viral()
+                total_sp_cost += cost_v
+                raw_items.extend(items_v)
+            except Exception as exc:
+                notes.append(f"Viral 50: {str(exc)[:80]}")
 
-            if isinstance(res_tracks, Exception):
-                notes.append(f"Plays: {str(res_tracks)[:80]}")
-            else:
-                total_sp_cost += res_tracks[0]
-                raw_items.extend(res_tracks[1])
+            try:
+                cost_t, items_t = await _fetch_tracks()
+                total_sp_cost += cost_t
+                raw_items.extend(items_t)
+            except Exception as exc:
+                notes.append(f"Plays: {str(exc)[:80]}")
 
             parsed = parse_spotify_scraper_items(raw_items)
             viral_count = sum(1 for item in parsed if item.get("spotify_viral_rank") is not None)
@@ -963,8 +968,14 @@ class ApifyCollectorClient:
         total_cost = 0.0
 
         if effective_budget >= 0.85:
-            # Plenty of budget: run all 5 Apify actors concurrently; isolated per-actor failures never crash the run
-            outcomes = await asyncio.gather(*[fn() for _, _, _, _, fn in actor_specs])
+            # Cap at 4 concurrent slots (Apify Free Tier allows max 5 concurrent actor jobs); isolated per-actor failures never crash the run
+            actor_sem = asyncio.Semaphore(4)
+
+            async def _guarded(fn: Any) -> Tuple[str, SourceStatus, List[Dict[str, Any]]]:
+                async with actor_sem:
+                    return await fn()
+
+            outcomes = await asyncio.gather(*[_guarded(fn) for _, _, _, _, fn in actor_specs])
             for result_key, st, data_list in outcomes:
                 out[result_key] = data_list
                 statuses_by_id[st.id] = st

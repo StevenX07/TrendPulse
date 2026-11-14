@@ -483,46 +483,55 @@ def test_apify_invalid_token_returns_clear_error_statuses() -> None:
 
 def test_apify_spotify_viral_client_populates_viral_ranks_and_plays() -> None:
     client = ApifyCollectorClient(token="apify_test")
+    active_jobs = 0
+    max_concurrent = 0
 
     async def fake_run_actor(actor_id: str, payload: dict, max_charge_usd: float, **kwargs):
-        if "spotify-scraper" in actor_id and payload.get("category") == "chart_viral_tracks":
-            return (
-                "r_viral",
-                0.05,
-                [
-                    {
-                        "category": "chart_viral_tracks",
-                        "mode": "chart",
-                        "ok": True,
-                        "rank": 1,
-                        "name": "STORM II",
-                        "artists": ["GENER8ION", "Yung Lean"],
-                        "playCount": 97_326_139,
-                        "releaseDate": "2026-04-24",
-                        "imageUrl": "https://i.scdn.co/image/storm2",
-                        "url": "https://open.spotify.com/track/0FZd4IaxB12sUTKSUUGwWq",
-                    }
-                ],
-            )
-        if "spotify-scraper" in actor_id and payload.get("category") == "auto":
-            return (
-                "r_tracks",
-                0.02,
-                [
-                    {
-                        "category": "track",
-                        "mode": "get",
-                        "ok": True,
-                        "name": "BbY WOW",
-                        "artists": ["KAROL G"],
-                        "playCount": 474_751_786,
-                        "durationMs": 225834,
-                        "releaseDate": "2026-08-07",
-                        "url": "https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr",
-                    }
-                ],
-            )
-        return ("r_empty", 0.0, [])
+        nonlocal active_jobs, max_concurrent
+        active_jobs += 1
+        max_concurrent = max(max_concurrent, active_jobs)
+        try:
+            await asyncio.sleep(0.01)
+            if "spotify-scraper" in actor_id and payload.get("category") == "chart_viral_tracks":
+                return (
+                    "r_viral",
+                    0.05,
+                    [
+                        {
+                            "category": "chart_viral_tracks",
+                            "mode": "chart",
+                            "ok": True,
+                            "rank": 1,
+                            "name": "STORM II",
+                            "artists": ["GENER8ION", "Yung Lean"],
+                            "playCount": 97_326_139,
+                            "releaseDate": "2026-04-24",
+                            "imageUrl": "https://i.scdn.co/image/storm2",
+                            "url": "https://open.spotify.com/track/0FZd4IaxB12sUTKSUUGwWq",
+                        }
+                    ],
+                )
+            if "spotify-scraper" in actor_id and payload.get("category") == "auto":
+                return (
+                    "r_tracks",
+                    0.02,
+                    [
+                        {
+                            "category": "track",
+                            "mode": "get",
+                            "ok": True,
+                            "name": "BbY WOW",
+                            "artists": ["KAROL G"],
+                            "playCount": 474_751_786,
+                            "durationMs": 225834,
+                            "releaseDate": "2026-08-07",
+                            "url": "https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr",
+                        }
+                    ],
+                )
+            return ("r_empty", 0.0, [])
+        finally:
+            active_jobs -= 1
 
     with (
         patch.object(
@@ -539,6 +548,7 @@ def test_apify_spotify_viral_client_populates_viral_ranks_and_plays() -> None:
             )
         )
 
+    assert max_concurrent <= 4
     st_map = {s.id: s for s in res["statuses"]}
     sp_status = st_map["spotify_viral_plays"]
     assert sp_status.status == "ok"
