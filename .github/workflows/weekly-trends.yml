@@ -1,0 +1,106 @@
+name: TrendPulse Weekly Sync & GitHub Pages Deploy
+
+on:
+  schedule:
+    # Todos los miércoles a las 00:00 hora local UTC-5 (05:00 UTC)
+    - cron: "0 5 * * 3"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Modo de recolección (full = 9 Gratuitas + 5 Apify de pago, free = Solo gratuitas)"
+        required: false
+        default: "full"
+        type: choice
+        options:
+          - full
+          - free
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/weekly-trends.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages-weekly-deploy"
+  cancel-in-progress: false
+
+jobs:
+  collect-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: "collector/requirements.txt"
+
+      - name: Install collector dependencies
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: python -m pip install --no-cache-dir -r collector/requirements.txt
+
+      - name: Run weekly music trend collector
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          APIFY_MAX_CHARGE_PER_RUN_USD: "1.05"
+        run: |
+          MODE="${{ inputs.mode || 'full' }}"
+          if [ "$MODE" = "full" ] && [ -z "$APIFY_API_TOKEN" ]; then
+            echo "::warning::APIFY_API_TOKEN no está configurado en Repository Secrets; cambiando a modo gratuito."
+            MODE="free"
+          fi
+          python -m collector.collect_trends --mode "$MODE" --max-budget 1.05
+
+      - name: Commit updated weekly snapshots
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/data/
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(trends): actualización semanal $(date -u +'%Y-%m-%d')"
+            git push
+          else
+            echo "Sin cambios nuevos en los datos semanales."
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+
+      - name: Install frontend dependencies & build static site
+        working-directory: frontend
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+        run: |
+          npm ci
+          npm run build
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

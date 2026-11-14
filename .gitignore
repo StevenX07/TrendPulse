@@ -1,0 +1,27 @@
+# Environments & Secrets
+.env
+.env.local
+*.env
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local cache & legacy DB at repo root (NOTE: frontend/public/data/ MUST stay tracked for GitHub Pages)
+/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+.vite/
+*.tsbuildinfo
+
+# OS / Editor
+.DS_Store
+Thumbs.db
