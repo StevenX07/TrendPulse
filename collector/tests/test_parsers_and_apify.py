@@ -409,3 +409,66 @@ def test_enrich_songs_metadata_upgrades_ephemeral_and_avoids_caching_dzcdn(
     assert saved_cache["karol-g__bby-wow"]["preview_url"] == "https://audio-ssl.itunes.apple.com/perm_bby.m4a"
     assert saved_cache["rare__exclusive"]["preview_url"] == ""
     assert saved_cache["rare__exclusive"]["cover_url"] == "https://dz/rare.jpg"
+
+
+def test_parse_eduair94_spotify_viral_and_track_rows() -> None:
+    eduair_raw = [
+        {
+            "category": "chart_viral_tracks",
+            "mode": "chart",
+            "ok": True,
+            "name": "STORM II",
+            "artists": ["GENER8ION", "Yung Lean"],
+            "rank": 1,
+            "playCount": 97_326_139,
+            "releaseDate": "2026-04-24",
+            "imageUrl": "https://i.scdn.co/image/storm2",
+            "url": "https://open.spotify.com/track/0FZd4IaxB12sUTKSUUGwWq",
+        },
+        {
+            "category": "chart_viral_tracks",
+            "mode": "chart",
+            "ok": True,
+            "name": "BbY WOW",
+            "artists": ["KAROL G", "Judeline"],
+            "rank": 7,
+            "playCount": 470_000_000,
+            "releaseDate": "2026-08-07",
+            "imageUrl": "https://i.scdn.co/image/bby",
+            "url": "https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr",
+        },
+        {
+            "category": "track",
+            "mode": "get",
+            "ok": True,
+            "name": "BbY WOW",
+            "artists": ["KAROL G"],
+            "durationMs": 225834,
+            "playCount": 474_751_786,
+            "releaseDate": "2026-08-07",
+            "imageUrl": "https://i.scdn.co/image/bby_hd",
+            "previewUrl": "https://p.scdn.co/mp3-preview/bbywow",
+            "url": "https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr",
+        },
+        {
+            "category": "track",
+            "mode": "get",
+            "ok": False,
+            "name": "Bad Row",
+            "artists": ["Someone"],
+        },
+    ]
+    parsed = parse_spotify_scraper_items(eduair_raw)
+    assert len(parsed) == 2
+
+    by_key = {row["song_key"]: row for row in parsed}
+    storm = by_key["gener8ion__storm-ii"]
+    assert storm["spotify_viral_rank"] == 1
+    assert storm["spotify_total_plays"] == 97_326_139
+    assert storm["cover_url"] == "https://i.scdn.co/image/storm2"
+
+    bby = by_key["karol-g__bby-wow"]
+    assert bby["spotify_viral_rank"] == 7
+    assert bby["spotify_total_plays"] == 474_751_786
+    assert bby["duration_sec"] == 225
+    assert bby["preview_url"] == "https://p.scdn.co/mp3-preview/bbywow"

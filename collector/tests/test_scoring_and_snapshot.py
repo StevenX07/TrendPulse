@@ -479,3 +479,73 @@ def test_apify_invalid_token_returns_clear_error_statuses() -> None:
     assert not mock_run.called
     assert len(res["statuses"]) == 5
     assert all(s.status == "error" and "401" in s.note for s in res["statuses"])
+
+
+def test_apify_spotify_viral_client_populates_viral_ranks_and_plays() -> None:
+    client = ApifyCollectorClient(token="apify_test")
+
+    async def fake_run_actor(actor_id: str, payload: dict, max_charge_usd: float, **kwargs):
+        if "spotify-scraper" in actor_id and payload.get("category") == "chart_viral_tracks":
+            return (
+                "r_viral",
+                0.05,
+                [
+                    {
+                        "category": "chart_viral_tracks",
+                        "mode": "chart",
+                        "ok": True,
+                        "rank": 1,
+                        "name": "STORM II",
+                        "artists": ["GENER8ION", "Yung Lean"],
+                        "playCount": 97_326_139,
+                        "releaseDate": "2026-04-24",
+                        "imageUrl": "https://i.scdn.co/image/storm2",
+                        "url": "https://open.spotify.com/track/0FZd4IaxB12sUTKSUUGwWq",
+                    }
+                ],
+            )
+        if "spotify-scraper" in actor_id and payload.get("category") == "auto":
+            return (
+                "r_tracks",
+                0.02,
+                [
+                    {
+                        "category": "track",
+                        "mode": "get",
+                        "ok": True,
+                        "name": "BbY WOW",
+                        "artists": ["KAROL G"],
+                        "playCount": 474_751_786,
+                        "durationMs": 225834,
+                        "releaseDate": "2026-08-07",
+                        "url": "https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr",
+                    }
+                ],
+            )
+        return ("r_empty", 0.0, [])
+
+    with (
+        patch.object(
+            ApifyCollectorClient,
+            "get_account_status",
+            new=AsyncMock(return_value={"configured": True, "connected": True, "remaining_usd": 4.0}),
+        ),
+        patch.object(ApifyCollectorClient, "_run_actor", new=AsyncMock(side_effect=fake_run_actor)),
+    ):
+        res = asyncio.run(
+            client.fetch_all_apify_trends(
+                max_budget_usd=1.05,
+                spotify_track_urls=["https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr"],
+            )
+        )
+
+    st_map = {s.id: s for s in res["statuses"]}
+    sp_status = st_map["spotify_viral_plays"]
+    assert sp_status.status == "ok"
+    assert sp_status.items_collected == 2
+    assert sp_status.cost_usd == 0.07
+
+    viral_rows = [s for s in res["spotify_extra_songs"] if s.get("spotify_viral_rank") is not None]
+    assert len(viral_rows) == 1
+    assert viral_rows[0]["song_key"] == "gener8ion__storm-ii"
+    assert viral_rows[0]["spotify_viral_rank"] == 1

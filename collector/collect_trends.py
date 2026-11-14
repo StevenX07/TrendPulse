@@ -108,7 +108,7 @@ async def run_collection(
     apify_token: Optional[str] = None,
     max_apify_usd: float = 1.05,
     max_songs_kept: int = 180,
-    enrich_limit: int = 230,
+    enrich_limit: int = 420,
     skip_enrichment: bool = False,
     output_dir: Optional[Path] = None,
     cache_path: Optional[Path] = DEFAULT_CACHE_PATH,
@@ -337,7 +337,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=("free", "full"), default="free")
     parser.add_argument("--max-budget", type=float, default=1.05)
     parser.add_argument("--max-songs", type=int, default=180)
-    parser.add_argument("--enrich-limit", type=int, default=230)
+    parser.add_argument("--enrich-limit", type=int, default=420)
     parser.add_argument("--skip-enrichment", action="store_true")
     args = parser.parse_args()
 

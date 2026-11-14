@@ -166,7 +166,7 @@ const APIFY_SOURCE_DOCS: SourceDocEntry[] = [
   {
     id: "spotify_viral_plays",
     title: "Spotify Viral 50 + Reproducciones Totales",
-    provider: "Apify · automation-lab/spotify-scraper",
+    provider: "Apify · eduair94/spotify-scraper",
     cadence: "Semanal (Viral 50 + Top 24 en alza)",
     extracts:
       "Posición exacta en Spotify Viral 50 Global, reproducciones acumuladas históricas (`playCount`), fecha oficial de lanzamiento y preview de respaldo.",
