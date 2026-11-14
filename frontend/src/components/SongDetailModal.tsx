@@ -172,9 +172,10 @@ export function SongDetailModal({
                   ? `Hoy: ${formatCompactNumber(song.spotify_daily_streams)} streams`
                   : "Sin variación semanal registrada"}
             </p>
-            {(song.spotify_weeks_on_chart || song.spotify_total_plays || song.spotify_viral_rank) && (
+            {(song.spotify_weeks_on_chart || song.spotify_total_plays || song.spotify_top50_rank || song.spotify_viral_rank) && (
               <p className="mt-1 text-[11px] text-[#80868B]">
                 {song.spotify_weeks_on_chart ? `${song.spotify_weeks_on_chart} sem. · Pico #${song.spotify_peak_rank || song.spotify_rank}` : ""}
+                {song.spotify_top50_rank ? ` · Top 50 Global #${song.spotify_top50_rank}` : ""}
                 {song.spotify_viral_rank ? ` · Viral Global #${song.spotify_viral_rank}` : ""}
                 {song.spotify_total_plays ? ` · ${formatCompactNumber(song.spotify_total_plays)} plays acumulados` : ""}
               </p>

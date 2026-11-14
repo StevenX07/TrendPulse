@@ -134,6 +134,9 @@ def compute_trend_score(song: Dict[str, Any]) -> float:
     sp_viral = song.get("spotify_viral_rank")
     if sp_viral:
         score += max(1.0, (51 - min(50, sp_viral)) / 50.0 * 5.0)
+    sp_top50 = song.get("spotify_top50_rank")
+    if sp_top50:
+        score += max(1.0, (51 - min(50, sp_top50)) / 50.0 * 3.0)
 
     # 2. YouTube 7D Views (max ~24 pts)
     yt_views = song.get("youtube_weekly_views") or 0
@@ -555,10 +558,12 @@ def merge_all_sources(
         if row.get("cover_url") and not rec.get("cover_url"):
             rec["cover_url"] = row["cover_url"]
 
-    # 14. Apify Spotify Viral 50 Global + Cumulative Play Counts & Release Dates
+    # 14. Apify Spotify Top 50, Viral 50 Global + Cumulative Play Counts & Release Dates
     for row in apify_data.get("spotify_extra_songs", []):
         rec = _ensure_record(records, title_index, row, updated_at)
         _add_platform(rec, "Spotify")
+        if row.get("spotify_top50_rank"):
+            rec["spotify_top50_rank"] = row["spotify_top50_rank"]
         if row.get("spotify_viral_rank"):
             rec["spotify_viral_rank"] = row["spotify_viral_rank"]
         if row.get("spotify_total_plays"):

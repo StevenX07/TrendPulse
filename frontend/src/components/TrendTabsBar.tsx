@@ -73,6 +73,7 @@ const TABS: Array<{
 const PLATFORM_PILLS: Array<{ id: PlatformFilter; label: string }> = [
   { id: "all", label: "Todas" },
   { id: "spotify", label: "Spotify 7D" },
+  { id: "spotify_top50", label: "Spotify Top 50" },
   { id: "spotify_viral", label: "Spotify Viral 50" },
   { id: "youtube", label: "YouTube 7D" },
   { id: "reels", label: "Instagram Reels" },

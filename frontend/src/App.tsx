@@ -35,6 +35,7 @@ const EMPTY_SNAPSHOT: WeeklySnapshot = {
     tiktok_songs_count: 0,
     reels_songs_count: 0,
     shazam_viral_count: 0,
+    spotify_top50_count: 0,
     spotify_viral_count: 0,
     new_entries_count: 0,
     multi_platform_count: 0,
@@ -158,6 +159,10 @@ export function App() {
         list = list
           .filter((s) => s.spotify_rank !== null)
           .sort((a, b) => (a.spotify_rank || 999) - (b.spotify_rank || 999));
+      } else if (platformFilter === "spotify_top50") {
+        list = list
+          .filter((s) => Boolean(s.spotify_top50_rank))
+          .sort((a, b) => (a.spotify_top50_rank || 999) - (b.spotify_top50_rank || 999));
       } else if (platformFilter === "spotify_viral") {
         list = list
           .filter((s) => Boolean(s.spotify_viral_rank))

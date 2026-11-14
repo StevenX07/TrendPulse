@@ -30,6 +30,8 @@ ACTOR_IG_REELS = "trendingtiktoksongs~instagram-audio-history"
 ACTOR_SHAZAM_CHARTS = "automation-lab~shazam-charts-scraper"
 ACTOR_SPOTIFY_SCRAPER = "eduair94~spotify-scraper"
 
+SPOTIFY_TOP_50_GLOBAL_PLAYLIST_URL = "https://open.spotify.com/playlist/37i9dQZEVXbMDoHDwVN2tF"
+SPOTIFY_TOP_50_GLOBAL_PLAYLIST_ID = "37i9dQZEVXbMDoHDwVN2tF"
 SPOTIFY_VIRAL_CHART_QUERY = "GLOBAL"
 
 # Unit pricing constants (Apify FREE tier)
@@ -57,7 +59,7 @@ def estimate_apify_weekly_cost(
     explore_max_sounds: int = 60,
     reels_max_rows: int = 60,
     shazam_max_items: int = 250,
-    spotify_items: int = 74,
+    spotify_items: int = 120,
 ) -> Dict[str, Any]:
     """Return transparent weekly + monthly USD estimate across all 5 Apify actors."""
     history_est = round(HISTORY_START_USD + (history_max_rows * HISTORY_PER_ROW_USD), 4)
@@ -421,10 +423,14 @@ def parse_shazam_charts_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any
 
 
 def parse_spotify_scraper_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Normalize Spotify Viral 50 (`chart_viral_tracks` / playlists) & track play counts (`eduair94~spotify-scraper`)."""
+    """Normalize Spotify Top 50 (`playlist_play_counts`), Viral 50 (`chart_viral_tracks`) & tracks (`eduair94~spotify-scraper`)."""
     by_sound: Dict[str, Dict[str, Any]] = {}
 
-    def _add_track(tr: Dict[str, Any], viral_pos: Optional[int] = None) -> None:
+    def _add_track(
+        tr: Dict[str, Any],
+        viral_pos: Optional[int] = None,
+        top50_pos: Optional[int] = None,
+    ) -> None:
         raw_title = str(tr.get("name") or tr.get("title") or "").strip()
         artists_val = tr.get("artists") or tr.get("artist") or ""
         if isinstance(artists_val, list):
@@ -450,6 +456,7 @@ def parse_spotify_scraper_items(items: List[Dict[str, Any]]) -> List[Dict[str, A
                 "title_key": make_title_only_key(title),
                 "title": title,
                 "artist": artist,
+                "spotify_top50_rank": None,
                 "spotify_viral_rank": None,
                 "spotify_total_plays": None,
                 "release_date": "",
@@ -460,6 +467,10 @@ def parse_spotify_scraper_items(items: List[Dict[str, Any]]) -> List[Dict[str, A
                 "spotify_url": "",
             },
         )
+        if top50_pos is not None and top50_pos > 0:
+            cur_t50 = existing["spotify_top50_rank"]
+            if cur_t50 is None or top50_pos < cur_t50:
+                existing["spotify_top50_rank"] = top50_pos
         if viral_pos is not None and viral_pos > 0:
             cur_rank = existing["spotify_viral_rank"]
             if cur_rank is None or viral_pos < cur_rank:
@@ -490,11 +501,18 @@ def parse_spotify_scraper_items(items: List[Dict[str, Any]]) -> List[Dict[str, A
             for idx, tr in enumerate(row["tracks"], start=1):
                 if isinstance(tr, dict):
                     _add_track(tr, viral_pos=idx)
+        elif (
+            row.get("category") in ("playlist_play_counts", "playlist_tracks")
+            or row.get("playlistId") == SPOTIFY_TOP_50_GLOBAL_PLAYLIST_ID
+            or SPOTIFY_TOP_50_GLOBAL_PLAYLIST_ID in str(row.get("query") or "")
+        ):
+            top50_pos = _to_int(row.get("position") or row.get("rank"))
+            _add_track(row, top50_pos=top50_pos)
         elif row.get("category") == "chart_viral_tracks" or row.get("mode") == "chart":
             viral_pos = _to_int(row.get("rank") or row.get("position"))
             _add_track(row, viral_pos=viral_pos)
         else:
-            _add_track(row, viral_pos=None)
+            _add_track(row)
 
     return list(by_sound.values())
 
@@ -659,7 +677,7 @@ class ApifyCollectorClient:
             ("tiktok_explore_sounds", "TikTok Explore 4 Mercados US/GB/MX/ES (Apify)"),
             ("instagram_reels_audio", "Instagram Reels Audio 7D (Apify)"),
             ("shazam_global_charts", "Shazam Top 200 & Viral 50 Global (Apify)"),
-            ("spotify_viral_plays", "Spotify Viral 50 + Reproducciones Totales (Apify)"),
+            ("spotify_viral_plays", "Spotify Top 50 + Viral 50 + Reproducciones Totales (Apify)"),
         )
 
         if not self.token:
@@ -885,9 +903,22 @@ class ApifyCollectorClient:
                 )
 
         async def _run_spotify_scraper() -> Tuple[str, SourceStatus, List[Dict[str, Any]]]:
+            top50_cap = round(max(0.05, 0.07 * scale), 2)
             viral_cap = round(max(0.05, 0.07 * scale), 2)
             tracks_cap = round(max(0.03, 0.04 * scale), 2)
             clean_tracks = [u for u in (spotify_track_urls or []) if "/track/" in u][:24]
+
+            async def _fetch_top50() -> Tuple[float, List[Dict[str, Any]]]:
+                _, cost_50, items_50 = await self._run_actor(
+                    ACTOR_SPOTIFY_SCRAPER,
+                    {
+                        "category": "playlist_play_counts",
+                        "queries": [SPOTIFY_TOP_50_GLOBAL_PLAYLIST_URL],
+                        "maxResultsPerQuery": 50,
+                    },
+                    max_charge_usd=top50_cap,
+                )
+                return cost_50, items_50
 
             async def _fetch_viral() -> Tuple[float, List[Dict[str, Any]]]:
                 _, cost_v, items_v = await self._run_actor(
@@ -902,14 +933,14 @@ class ApifyCollectorClient:
                 )
                 return cost_v, items_v
 
-            async def _fetch_tracks() -> Tuple[float, List[Dict[str, Any]]]:
-                if not clean_tracks:
+            async def _fetch_tracks(pending_urls: List[str]) -> Tuple[float, List[Dict[str, Any]]]:
+                if not pending_urls:
                     return 0.0, []
                 _, cost_t, items_t = await self._run_actor(
                     ACTOR_SPOTIFY_SCRAPER,
                     {
                         "category": "auto",
-                        "queries": clean_tracks,
+                        "queries": pending_urls,
                     },
                     max_charge_usd=tracks_cap,
                 )
@@ -919,24 +950,44 @@ class ApifyCollectorClient:
             raw_items: List[Dict[str, Any]] = []
             notes: List[str] = []
 
-            # Run Viral 50 and track-play lookups sequentially inside this slot so we never exceed Apify's 5-job concurrency cap.
+            # Run Top 50 Global playlist, Viral 50 chart, and uncovered track lookups sequentially inside this slot
+            # so combined runs never exceed Apify Free Tier's 5-concurrent-job limit.
+            try:
+                cost_50, items_50 = await _fetch_top50()
+                total_sp_cost += cost_50
+                raw_items.extend(items_50)
+            except Exception as exc:
+                notes.append(f"Top 50: {str(exc)[:70]}")
+
             try:
                 cost_v, items_v = await _fetch_viral()
                 total_sp_cost += cost_v
                 raw_items.extend(items_v)
             except Exception as exc:
-                notes.append(f"Viral 50: {str(exc)[:80]}")
+                notes.append(f"Viral 50: {str(exc)[:70]}")
+
+            already_scraped_ids = {str(it.get("id") or "") for it in raw_items if isinstance(it, dict) and it.get("id")}
+            already_scraped_urls = {str(it.get("url") or "").split("?")[0] for it in raw_items if isinstance(it, dict) and it.get("url")}
+            uncovered_tracks = [
+                u
+                for u in clean_tracks
+                if u.split("?")[0] not in already_scraped_urls
+                and u.rstrip("/").split("/")[-1].split("?")[0] not in already_scraped_ids
+            ]
 
             try:
-                cost_t, items_t = await _fetch_tracks()
+                cost_t, items_t = await _fetch_tracks(uncovered_tracks)
                 total_sp_cost += cost_t
                 raw_items.extend(items_t)
             except Exception as exc:
-                notes.append(f"Plays: {str(exc)[:80]}")
+                notes.append(f"Plays: {str(exc)[:70]}")
 
             parsed = parse_spotify_scraper_items(raw_items)
+            top50_count = sum(1 for item in parsed if item.get("spotify_top50_rank") is not None)
             viral_count = sum(1 for item in parsed if item.get("spotify_viral_rank") is not None)
-            if parsed and viral_count == 0 and not notes:
+            if parsed and top50_count == 0:
+                notes.append("Spotify Top 50 sin filas.")
+            if parsed and viral_count == 0:
                 notes.append("Spotify Viral 50 sin filas.")
             if not parsed and not notes:
                 notes.append("Sin tracks en respuesta Spotify.")
@@ -945,9 +996,9 @@ class ApifyCollectorClient:
                 "spotify_extra_songs",
                 SourceStatus(
                     id="spotify_viral_plays",
-                    name="Spotify Viral 50 + Reproducciones Totales (Apify)",
+                    name="Spotify Top 50 + Viral 50 + Reproducciones Totales (Apify)",
                     kind="apify",
-                    status="ok" if (parsed and viral_count > 0) else "error",
+                    status="ok" if (parsed and top50_count > 0 and viral_count > 0) else "error",
                     items_collected=len(parsed),
                     cost_usd=round(total_sp_cost, 4),
                     note="; ".join(notes),
@@ -958,7 +1009,7 @@ class ApifyCollectorClient:
         actor_specs = [
             ("history_songs", "tiktok_growth_history", "TikTok 7D Crecimiento Multi-País (Apify)", 0.12, _run_tiktok_history),
             ("shazam_songs", "shazam_global_charts", "Shazam Top 200 & Viral 50 Global (Apify)", 0.08, _run_shazam_charts),
-            ("spotify_extra_songs", "spotify_viral_plays", "Spotify Viral 50 + Reproducciones Totales (Apify)", 0.06, _run_spotify_scraper),
+            ("spotify_extra_songs", "spotify_viral_plays", "Spotify Top 50 + Viral 50 + Reproducciones Totales (Apify)", 0.06, _run_spotify_scraper),
             ("reels_songs", "instagram_reels_audio", "Instagram Reels Audio 7D (Apify)", 0.12, _run_instagram_reels),
             ("explore_songs", "tiktok_explore_sounds", "TikTok Explore 4 Mercados US/GB/MX/ES (Apify)", 0.12, _run_tiktok_explore),
         ]

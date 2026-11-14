@@ -165,11 +165,11 @@ const APIFY_SOURCE_DOCS: SourceDocEntry[] = [
   },
   {
     id: "spotify_viral_plays",
-    title: "Spotify Viral 50 + Reproducciones Totales",
+    title: "Spotify Top 50 Global + Viral 50 + Reproducciones",
     provider: "Apify · eduair94/spotify-scraper",
-    cadence: "Semanal (Viral 50 + Top 24 en alza)",
+    cadence: "Semanal (Top 50 oficial + Viral 50 + Top en alza)",
     extracts:
-      "Posición exacta en Spotify Viral 50 Global, reproducciones acumuladas históricas (`playCount`), fecha oficial de lanzamiento y preview de respaldo.",
+      "Playlist oficial Top 50: Global (37i9dQZEVXbMDoHDwVN2tF), ranking Spotify Viral 50 Global, reproducciones acumuladas históricas (`playCount`) y metadatos oficiales.",
     accentBg: "bg-[#E6F4EA]",
     accentText: "text-[#137333]",
   },

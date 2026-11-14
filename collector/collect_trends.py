@@ -108,7 +108,7 @@ async def run_collection(
     apify_token: Optional[str] = None,
     max_apify_usd: float = 1.05,
     max_songs_kept: int = 180,
-    enrich_limit: int = 420,
+    enrich_limit: int = 450,
     skip_enrichment: bool = False,
     output_dir: Optional[Path] = None,
     cache_path: Optional[Path] = DEFAULT_CACHE_PATH,
@@ -173,7 +173,7 @@ async def run_collection(
                     ),
                     SourceStatus(
                         id="spotify_viral_plays",
-                        name="Spotify Viral 50 + Reproducciones Totales (Apify)",
+                        name="Spotify Top 50 + Viral 50 + Reproducciones Totales (Apify)",
                         kind="apify",
                         status="error",
                         note=err_msg,
@@ -219,7 +219,7 @@ async def run_collection(
                 ),
                 SourceStatus(
                     id="spotify_viral_plays",
-                    name="Spotify Viral 50 + Reproducciones Totales (Apify)",
+                    name="Spotify Top 50 + Viral 50 + Reproducciones Totales (Apify)",
                     kind="apify",
                     status="skipped",
                     note="Fuente de pago no incluida en modo gratuito.",
@@ -247,6 +247,7 @@ async def run_collection(
         and (
             "TikTok" in s.get("platforms", [])
             or "Reels" in s.get("platforms", [])
+            or s.get("spotify_top50_rank") is not None
             or s.get("spotify_viral_rank") is not None
             or s.get("shazam_viral_rank") is not None
         )
@@ -264,6 +265,7 @@ async def run_collection(
     tiktok_songs = [s for s in songs if "TikTok" in s.platforms]
     reels_songs = [s for s in songs if "Reels" in s.platforms]
     shazam_viral_songs = [s for s in songs if s.shazam_viral_rank is not None]
+    spotify_top50_songs = [s for s in songs if s.spotify_top50_rank is not None]
     spotify_viral_songs = [s for s in songs if s.spotify_viral_rank is not None]
     social_songs = [s for s in songs if ("TikTok" in s.platforms or "Reels" in s.platforms)]
     social_top = sorted(
@@ -287,6 +289,7 @@ async def run_collection(
         tiktok_songs_count=len(tiktok_songs),
         reels_songs_count=len(reels_songs),
         shazam_viral_count=len(shazam_viral_songs),
+        spotify_top50_count=len(spotify_top50_songs),
         spotify_viral_count=len(spotify_viral_songs),
         new_entries_count=sum(1 for s in songs if s.is_new_entry),
         multi_platform_count=sum(1 for s in songs if s.platform_count >= 3),
@@ -337,7 +340,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=("free", "full"), default="free")
     parser.add_argument("--max-budget", type=float, default=1.05)
     parser.add_argument("--max-songs", type=int, default=180)
-    parser.add_argument("--enrich-limit", type=int, default=420)
+    parser.add_argument("--enrich-limit", type=int, default=450)
     parser.add_argument("--skip-enrichment", action="store_true")
     args = parser.parse_args()
 

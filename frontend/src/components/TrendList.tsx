@@ -24,12 +24,13 @@ const PLATFORM_STYLES: Record<string, string> = {
 
 function getPlatformRankLabel(song: WeeklySongTrend, platform: string): string {
   switch (platform) {
-    case "Spotify":
-      if (song.spotify_rank && song.spotify_viral_rank) {
-        return `Spotify #${song.spotify_rank} · Viral #${song.spotify_viral_rank}`;
-      }
-      if (song.spotify_viral_rank) return `Spotify Viral #${song.spotify_viral_rank}`;
-      return song.spotify_rank ? `Spotify #${song.spotify_rank}` : "Spotify";
+    case "Spotify": {
+      const parts: string[] = [];
+      if (song.spotify_rank) parts.push(`Spotify #${song.spotify_rank}`);
+      if (song.spotify_top50_rank) parts.push(`Top 50 #${song.spotify_top50_rank}`);
+      if (song.spotify_viral_rank) parts.push(`Viral #${song.spotify_viral_rank}`);
+      return parts.length > 0 ? parts.join(" · ") : "Spotify";
+    }
     case "YouTube":
       return song.youtube_rank ? `YT #${song.youtube_rank}` : "YouTube";
     case "TikTok":

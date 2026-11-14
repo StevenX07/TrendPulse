@@ -9,6 +9,7 @@ export type TrendTab =
 export type PlatformFilter =
   | "all"
   | "spotify"
+  | "spotify_top50"
   | "spotify_viral"
   | "youtube"
   | "reels"
@@ -64,6 +65,7 @@ export interface WeeklySongTrend {
   spotify_daily_streams: number | null;
   spotify_weeks_on_chart: number | null;
   spotify_peak_rank: number | null;
+  spotify_top50_rank?: number | null;
   spotify_viral_rank?: number | null;
   spotify_total_plays?: number | null;
   spotify_url: string;
@@ -137,6 +139,7 @@ export interface SnapshotSummary {
   tiktok_songs_count: number;
   reels_songs_count?: number;
   shazam_viral_count?: number;
+  spotify_top50_count?: number;
   spotify_viral_count?: number;
   new_entries_count: number;
   multi_platform_count: number;

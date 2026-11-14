@@ -53,7 +53,7 @@ class WeeklySongTrend(BaseModel):
     wow_rank_delta: Optional[int] = None  # Positive = climbed vs previous week
     wow_score_delta: Optional[float] = None
 
-    # Spotify (Kworb Weekly/Daily + Apify Viral 50 & Play Counts)
+    # Spotify (Kworb Weekly/Daily + Apify Top 50, Viral 50 & Play Counts)
     spotify_rank: Optional[int] = None
     spotify_rank_change: Optional[str] = None
     spotify_weekly_streams: Optional[int] = None
@@ -62,6 +62,7 @@ class WeeklySongTrend(BaseModel):
     spotify_daily_streams: Optional[int] = None
     spotify_weeks_on_chart: Optional[int] = None
     spotify_peak_rank: Optional[int] = None
+    spotify_top50_rank: Optional[int] = None
     spotify_viral_rank: Optional[int] = None
     spotify_total_plays: Optional[int] = None
     spotify_url: str = ""
@@ -147,6 +148,7 @@ class SnapshotSummary(BaseModel):
     tiktok_songs_count: int = 0
     reels_songs_count: int = 0
     shazam_viral_count: int = 0
+    spotify_top50_count: int = 0
     spotify_viral_count: int = 0
     new_entries_count: int = 0
     multi_platform_count: int = 0

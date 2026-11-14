@@ -485,6 +485,7 @@ def test_apify_spotify_viral_client_populates_viral_ranks_and_plays() -> None:
     client = ApifyCollectorClient(token="apify_test")
     active_jobs = 0
     max_concurrent = 0
+    auto_queries_seen: list[str] = []
 
     async def fake_run_actor(actor_id: str, payload: dict, max_charge_usd: float, **kwargs):
         nonlocal active_jobs, max_concurrent
@@ -492,6 +493,28 @@ def test_apify_spotify_viral_client_populates_viral_ranks_and_plays() -> None:
         max_concurrent = max(max_concurrent, active_jobs)
         try:
             await asyncio.sleep(0.01)
+            if "spotify-scraper" in actor_id and payload.get("category") == "playlist_play_counts":
+                return (
+                    "r_top50",
+                    0.05,
+                    [
+                        {
+                            "category": "playlist_play_counts",
+                            "mode": "get",
+                            "query": "https://open.spotify.com/playlist/37i9dQZEVXbMDoHDwVN2tF",
+                            "playlistId": "37i9dQZEVXbMDoHDwVN2tF",
+                            "ok": True,
+                            "id": "3h5T5JypYU7huFiVYhv1dr",
+                            "position": 1,
+                            "name": "BbY WOW",
+                            "artists": ["KAROL G", "Judeline"],
+                            "playCount": 474_751_786,
+                            "durationMs": 225834,
+                            "imageUrl": "https://i.scdn.co/image/bby",
+                            "url": "https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr",
+                        }
+                    ],
+                )
             if "spotify-scraper" in actor_id and payload.get("category") == "chart_viral_tracks":
                 return (
                     "r_viral",
@@ -501,6 +524,7 @@ def test_apify_spotify_viral_client_populates_viral_ranks_and_plays() -> None:
                             "category": "chart_viral_tracks",
                             "mode": "chart",
                             "ok": True,
+                            "id": "0FZd4IaxB12sUTKSUUGwWq",
                             "rank": 1,
                             "name": "STORM II",
                             "artists": ["GENER8ION", "Yung Lean"],
@@ -512,20 +536,22 @@ def test_apify_spotify_viral_client_populates_viral_ranks_and_plays() -> None:
                     ],
                 )
             if "spotify-scraper" in actor_id and payload.get("category") == "auto":
+                auto_queries_seen.extend(payload.get("queries") or [])
                 return (
                     "r_tracks",
-                    0.02,
+                    0.01,
                     [
                         {
                             "category": "track",
                             "mode": "get",
                             "ok": True,
-                            "name": "BbY WOW",
-                            "artists": ["KAROL G"],
-                            "playCount": 474_751_786,
-                            "durationMs": 225834,
-                            "releaseDate": "2026-08-07",
-                            "url": "https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr",
+                            "id": "extra123",
+                            "name": "Rising Track",
+                            "artists": ["Nova"],
+                            "playCount": 88_000_000,
+                            "durationMs": 195000,
+                            "releaseDate": "2026-11-01",
+                            "url": "https://open.spotify.com/track/extra123",
                         }
                     ],
                 )
@@ -544,16 +570,27 @@ def test_apify_spotify_viral_client_populates_viral_ranks_and_plays() -> None:
         res = asyncio.run(
             client.fetch_all_apify_trends(
                 max_budget_usd=1.05,
-                spotify_track_urls=["https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr"],
+                spotify_track_urls=[
+                    "https://open.spotify.com/track/3h5T5JypYU7huFiVYhv1dr",
+                    "https://open.spotify.com/track/extra123",
+                ],
             )
         )
 
     assert max_concurrent <= 4
+    # Track already covered by Top 50 playlist must NOT be re-queried in `auto`
+    assert auto_queries_seen == ["https://open.spotify.com/track/extra123"]
+
     st_map = {s.id: s for s in res["statuses"]}
     sp_status = st_map["spotify_viral_plays"]
     assert sp_status.status == "ok"
-    assert sp_status.items_collected == 2
-    assert sp_status.cost_usd == 0.07
+    assert sp_status.items_collected == 3
+    assert sp_status.cost_usd == 0.11
+
+    top50_rows = [s for s in res["spotify_extra_songs"] if s.get("spotify_top50_rank") is not None]
+    assert len(top50_rows) == 1
+    assert top50_rows[0]["song_key"] == "karol-g__bby-wow"
+    assert top50_rows[0]["spotify_top50_rank"] == 1
 
     viral_rows = [s for s in res["spotify_extra_songs"] if s.get("spotify_viral_rank") is not None]
     assert len(viral_rows) == 1
