@@ -2,8 +2,8 @@ name: TrendPulse Weekly Sync & GitHub Pages Deploy
 
 on:
   schedule:
-    # Todos los miércoles a las 00:00 hora local UTC-5 (05:00 UTC)
-    - cron: "0 5 * * 3"
+    # Miércoles 05:55 hora Bogotá (10:55 UTC)
+    - cron: "55 10 * * 3"
   workflow_dispatch:
     inputs:
       mode:
