@@ -1,6 +1,19 @@
 {
-  "updated_at": "2026-11-14T07:26:07.227749+00:00",
+  "updated_at": "2026-11-18T12:12:05.607196+00:00",
   "weeks": [
+    {
+      "week_id": "2026-11-18",
+      "generated_at": "2026-11-18T12:12:05.607196+00:00",
+      "mode": "full",
+      "total_songs": 384,
+      "tiktok_songs_count": 81,
+      "reels_songs_count": 42,
+      "top_streamed_title": "BbY WOW",
+      "top_streamed_artist": "KAROL G",
+      "fastest_growth_title": "Last Christmas",
+      "fastest_growth_artist": "Wham!",
+      "archive_path": "data/archive/2026-11-18.json"
+    },
     {
       "week_id": "2026-11-14",
       "generated_at": "2026-11-14T07:26:07.227749+00:00",
