@@ -2,8 +2,9 @@ name: TrendPulse Weekly Sync & GitHub Pages Deploy
 
 on:
   schedule:
-    # Miércoles 06:47 hora Bogotá (11:47 UTC)
-    - cron: "47 11 * * 3"
+    # Todos los miércoles a las 00:37 hora Colombia / UTC-5 (05:37 UTC)
+    # Usar minuto :37 reduce la congestión de los horarios en punto (:00) en GitHub Actions.
+    - cron: "37 5 * * 3"
   workflow_dispatch:
     inputs:
       mode:
@@ -25,34 +26,52 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: read
 
 concurrency:
   group: "pages-weekly-deploy"
   cancel-in-progress: false
 
 jobs:
-  collect-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether to run weekly collector
+        id: collect_gate
+        run: |
+          EVENT="${{ github.event_name }}"
+          TODAY_UTC="$(date -u +'%Y-%m-%d')"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "should_collect=true" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = "schedule" ]; then
+            if [ -f "frontend/public/data/archive/${TODAY_UTC}.json" ]; then
+              echo "::notice::Snapshot ${TODAY_UTC} ya existe; se omite recolección duplicada en schedule para evitar doble consumo de Apify."
+              echo "should_collect=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "should_collect=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "should_collect=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Python
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        uses: actions/setup-python@v5
+        if: steps.collect_gate.outputs.should_collect == 'true'
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
       - name: Install collector dependencies
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: steps.collect_gate.outputs.should_collect == 'true'
         run: python -m pip install --no-cache-dir -r collector/requirements.txt
 
       - name: Run weekly music trend collector
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: steps.collect_gate.outputs.should_collect == 'true'
         env:
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           APIFY_MAX_CHARGE_PER_RUN_USD: "1.05"
@@ -65,20 +84,21 @@ jobs:
           python -m collector.collect_trends --mode "$MODE" --max-budget 1.05
 
       - name: Commit updated weekly snapshots
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: steps.collect_gate.outputs.should_collect == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add frontend/public/data/
           if ! git diff --staged --quiet; then
             git commit -m "chore(trends): actualización semanal $(date -u +'%Y-%m-%d')"
+            git pull --rebase origin main
             git push origin HEAD:main
           else
             echo "Sin cambios nuevos en los datos semanales."
           fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: "npm"
@@ -93,13 +113,35 @@ jobs:
           npm run build
 
       - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/dist
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Wait for github-pages artifact to be indexed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 12); do
+            COUNT=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" --jq '[.artifacts[] | select(.name == "github-pages" and .expired == false)] | length' 2>/dev/null || echo 0)
+            echo "Attempt $i: found $COUNT github-pages artifact(s)"
+            if [ "$COUNT" -ge 1 ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::warning::El artefacto github-pages aún no aparece en la API tras 60s; continuando con deploy-pages."
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
