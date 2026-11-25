@@ -1,13 +1,13 @@
 {
-  "updated_at": "2026-11-25T15:59:55.801040+00:00",
+  "updated_at": "2026-11-25T18:39:26.644321+00:00",
   "weeks": [
     {
       "week_id": "2026-11-25",
-      "generated_at": "2026-11-25T15:59:55.801040+00:00",
-      "mode": "full",
-      "total_songs": 290,
-      "tiktok_songs_count": 30,
-      "reels_songs_count": 26,
+      "generated_at": "2026-11-25T18:39:26.644321+00:00",
+      "mode": "free",
+      "total_songs": 201,
+      "tiktok_songs_count": 0,
+      "reels_songs_count": 0,
       "top_streamed_title": "BbY WOW",
       "top_streamed_artist": "KAROL G",
       "fastest_growth_title": "Flower In A Hurricane",
